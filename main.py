@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, time
-from ProctorSchedulingSystem import ProctorSchedulingSystem
+from datetime import time
+from src.ProctorSchedulingSystem import ProctorSchedulingSystem
 from io import StringIO
 
 
