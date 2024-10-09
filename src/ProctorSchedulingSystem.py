@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 import logging
-from ScheduleOptimizer import ScheduleOptimizer
-from SchedulePresenter import SchedulePresenter
-from Schedulegenrator import ScheduleGenerator
+from src.SchedulePresenter import SchedulePresenter
+from src.Schedulegenrator import ScheduleGenerator
+from src.ScheduleOptimizer import ScheduleOptimizer
 
 
 @dataclass
@@ -75,7 +75,7 @@ class ProctorSchedulingSystem:
 
     def _validate_time_formats(self) -> None:
         """Validate time formats in both dataframes."""
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
         # Validate proctor availability times
         for day in days:
@@ -152,13 +152,13 @@ class ProctorSchedulingSystem:
         availabilities = []
         for _, row in self.proctors_df.iterrows():
             availability = {
-                'name': row['Name'],
+                'Name': row['Name'],
                 'star': bool(row['Star']),
                 'max_hours': float(row['MaxHours']),
                 'availability': {}
             }
 
-            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
+            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
                 if pd.notna(row[day]):
                     time_ranges = str(row[day]).split(';')
                     availability['availability'][day] = [

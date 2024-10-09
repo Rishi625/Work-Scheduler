@@ -51,7 +51,7 @@ class ScheduleGenerator:
 
     def _initialize_proctor_hours(self, proctor_availabilities: List[Dict]):
         self.proctor_weekly_hours = {
-            proctor['name']: 0 for proctor in proctor_availabilities
+            proctor['Name']: 0 for proctor in proctor_availabilities
         }
 
     def _generate_day_schedule(self,
@@ -98,7 +98,7 @@ class ScheduleGenerator:
                 overlap = lab_slot.get_overlap(avail_slot)
 
                 if overlap and self._is_valid_assignment(
-                        proctor['name'], overlap.duration_hours()):
+                        proctor['Name'], overlap.duration_hours()):
                     priority_score = self._calculate_priority_score(
                         proctor, overlap.duration_hours())
 
@@ -124,7 +124,7 @@ class ScheduleGenerator:
         # 3. Total availability (prefer those with more availability)
 
         star_factor = 1000 if proctor['star'] else 0
-        hours_factor = self.max_weekly_hours - self.proctor_weekly_hours[proctor['name']]
+        hours_factor = self.max_weekly_hours - self.proctor_weekly_hours[proctor['Name']]
         availability_factor = sum(len(slots) for slots in
                                   proctor['availability'].values())
 
@@ -140,10 +140,10 @@ class ScheduleGenerator:
             _, proctor, overlap = heapq.heappop(candidates)
 
             # Update proctor's weekly hours
-            self.proctor_weekly_hours[proctor['name']] += overlap.duration_hours()
+            self.proctor_weekly_hours[proctor['Name']] += overlap.duration_hours()
 
             selected_proctors.append({
-                'name': proctor['name'],
+                'Name': proctor['Name'],
                 'star': proctor['star'],
                 'assigned_time': {
                     'start': overlap.start,

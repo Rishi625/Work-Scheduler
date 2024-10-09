@@ -20,6 +20,6 @@ class SchedulePresenter:
 
                 formatted_schedule.append(f"  {lab_time['start']} - {lab_time['end']}:")
                 for proctor in proctors:
-                    formatted_schedule.append(f"    - {proctor['name']} ({'Star' if proctor['star'] else 'Regular'})")
+                    formatted_schedule.append(f"    - {proctor['Name']} ({'Star' if proctor['star'] else 'Regular'})")
 
         return "\n".join(formatted_schedule)

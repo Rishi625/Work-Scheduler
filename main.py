@@ -5,17 +5,6 @@ from src.ProctorSchedulingSystem import ProctorSchedulingSystem
 from io import StringIO
 
 
-def validate_proctor_df(df):
-    required_columns = ['Name', 'MaxHours', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-                        'Sunday']
-    missing_columns = [col for col in required_columns if col not in df.columns]
-
-    if missing_columns:
-        return False, f"Missing columns in proctor availability file: {', '.join(missing_columns)}"
-
-    return True, "Proctor availability file is valid"
-
-
 def main():
     st.title("Proctor Scheduling System")
 
@@ -24,6 +13,10 @@ def main():
         st.session_state.lab_schedule = []
     if 'proctor_df' not in st.session_state:
         st.session_state.proctor_df = None
+    if 'star_proctors' not in st.session_state:
+        st.session_state.star_proctors = {}
+    if 'proctor_hours' not in st.session_state:
+        st.session_state.proctor_hours = {}
 
     # Lab Schedule Input
     st.header("Lab Schedule")
@@ -51,59 +44,94 @@ def main():
     if proctor_file is not None:
         try:
             proctor_df = pd.read_csv(StringIO(proctor_file.getvalue().decode("utf-8")))
-            is_valid, message = validate_proctor_df(proctor_df)
+            st.success("Proctor availability file uploaded successfully.")
 
-            if is_valid:
-                st.success(message)
-                st.session_state.proctor_df = proctor_df
-                st.subheader("Uploaded Proctor Availability")
-                st.dataframe(proctor_df)
+            # Star Proctor Selection and Hours Assignment
+            st.subheader("Proctor Configuration")
 
-                # Star Proctor Selection
-                star_proctor = st.selectbox("Select a Star Proctor", ['None'] + list(proctor_df['Name']))
-                if star_proctor != 'None':
-                    max_hours = st.number_input("Enter maximum hours for the Star Proctor", min_value=1, max_value=40,
-                                                value=20)
-                    st.session_state.proctor_df.loc[st.session_state.proctor_df['Name'] == star_proctor, 'Star'] = True
-                    st.session_state.proctor_df.loc[
-                        st.session_state.proctor_df['Name'] == star_proctor, 'MaxHours'] = max_hours
+            # Create columns for better layout
+            col1, col2 = st.columns(2)
 
-                # Generate Schedule Button
-                if st.button("Generate Schedule"):
-                    if not st.session_state.lab_schedule:
-                        st.error("Please add lab schedule before generating the schedule.")
-                    else:
-                        try:
-                            # Create DataFrame from session state for lab schedule
-                            lab_df = pd.DataFrame(st.session_state.lab_schedule)
+            with col1:
+                st.write("Select Star Proctors")
+                for index, row in proctor_df.iterrows():
+                    proctor_name = row['Name']
+                    # Use the session state to maintain selections
+                    if proctor_name not in st.session_state.star_proctors:
+                        st.session_state.star_proctors[proctor_name] = False
 
-                            # Initialize ProctorSchedulingSystem
-                            scheduler = ProctorSchedulingSystem()
-                            scheduler.proctors_df = st.session_state.proctor_df
-                            scheduler.lab_schedule_df = lab_df
+                    st.session_state.star_proctors[proctor_name] = st.checkbox(
+                        f"Mark {proctor_name}",
+                        value=st.session_state.star_proctors[proctor_name],
+                        key=f"star_{proctor_name}"
+                    )
 
-                            # Generate schedule
-                            schedule = scheduler.generate_schedule()
-                            st.success("Schedule generated successfully!")
-                            st.text(schedule)
+            with col2:
+                st.write("Assign Weekly Hours")
+                for index, row in proctor_df.iterrows():
+                    proctor_name = row['Name']
+                    if proctor_name not in st.session_state.proctor_hours:
+                        st.session_state.proctor_hours[proctor_name] = 4.0
 
-                            # Option to download the schedule
-                            st.download_button(
-                                label="Download Schedule",
-                                data=schedule,
-                                file_name="generated_schedule.txt",
-                                mime="text/plain"
-                            )
+                    hours = st.number_input(
+                        f"Hours for {proctor_name}",
+                        min_value=1.0,
+                        max_value=40.0,
+                        value=st.session_state.proctor_hours[proctor_name],
+                        step=0.5,
+                        key=f"hours_{proctor_name}"
+                    )
+                    st.session_state.proctor_hours[proctor_name] = hours
 
-                        except Exception as e:
-                            st.error(f"An error occurred while generating the schedule: {str(e)}")
-            else:
-                st.error(message)
+            # Update the DataFrame with star status and hours
+            proctor_df['Star'] = proctor_df['Name'].map(
+                lambda x: 1 if st.session_state.star_proctors.get(x, False) else 0)
+            proctor_df['MaxHours'] = proctor_df['Name'].map(lambda x: st.session_state.proctor_hours.get(x, 4.0))
 
-        except pd.errors.EmptyDataError:
-            st.error("The uploaded file is empty. Please upload a valid CSV file.")
-        except pd.errors.ParserError:
-            st.error("Unable to parse the CSV file. Please ensure it's a valid CSV format.")
+            # Display updated proctor information
+            st.subheader("Updated Proctor Information")
+            st.dataframe(proctor_df)
+
+            # Store the updated DataFrame in session state
+            st.session_state.proctor_df = proctor_df
+
+            # Generate Schedule Button
+            if st.button("Generate Schedule"):
+                if not st.session_state.lab_schedule:
+                    st.error("Please add lab schedule before generating the schedule.")
+                else:
+                    try:
+                        # Create DataFrame from session state for lab schedule
+                        lab_df = pd.DataFrame(st.session_state.lab_schedule)
+
+                        # Initialize ProctorSchedulingSystem
+                        scheduler = ProctorSchedulingSystem()
+                        scheduler.proctors_df = st.session_state.proctor_df
+                        scheduler.lab_schedule_df = lab_df
+
+                        # Generate schedule
+                        schedule = scheduler.generate_schedule()
+                        st.success("Schedule generated successfully!")
+                        st.text(schedule)
+
+                        # Add schedule analysis
+                        st.subheader("Schedule Analysis")
+                        for proctor_name in st.session_state.proctor_hours:
+                            hours = st.session_state.proctor_hours[proctor_name]
+                            if hours <= 4:
+                                st.info(f"{proctor_name}'s {hours} hours will be covered in a single shift")
+
+                        # Option to download the schedule
+                        st.download_button(
+                            label="Download Schedule",
+                            data=schedule,
+                            file_name="generated_schedule.txt",
+                            mime="text/plain"
+                        )
+
+                    except Exception as e:
+                        st.error(f"An error occurred while generating the schedule: {str(e)}")
+
         except Exception as e:
             st.error(f"An error occurred while processing the file: {str(e)}")
     else:

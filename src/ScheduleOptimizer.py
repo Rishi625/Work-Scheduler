@@ -1,8 +1,6 @@
-
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import heapq
-
 
 class ScheduleOptimizer:
     def optimize_schedule(self,
@@ -49,14 +47,14 @@ class ScheduleOptimizer:
         for day_schedule in schedule.values():
             for session in day_schedule:
                 for proctor in session['proctors']:
-                    name = proctor['name']
-                    if name not in stats:
-                        stats[name] = {
+                    Name = proctor['Name']  # Changed from 'Name' to 'name'
+                    if Name not in stats:
+                        stats[Name] = {
                             'hours': 0,
                             'star': proctor['star'],
                             'availability': 0  # Will be counted
                         }
-                    stats[name]['availability'] += 1
+                    stats[Name]['availability'] += 1
 
         return stats
 
@@ -98,8 +96,8 @@ class ScheduleOptimizer:
         proctor_queue = []
 
         for proctor in original_proctors:
-            name = proctor['name']
-            stats = proctor_stats[name]
+            Name = proctor['Name']  # Changed from 'Name' to 'name'
+            stats = proctor_stats[Name]
 
             # Skip if adding this session would exceed max hours
             if stats['hours'] + session_duration > max_hours_per_week:
@@ -109,7 +107,7 @@ class ScheduleOptimizer:
             priority_score = self._calculate_priority_score(stats, session_duration)
 
             heapq.heappush(proctor_queue,
-                           (-priority_score, name, proctor))  # Negative for max-heap
+                           (-priority_score, Name, proctor))  # Negative for max-heap
 
         # Select best proctors
         selected_proctors = []
@@ -137,43 +135,8 @@ class ScheduleOptimizer:
                               proctors: List[Dict],
                               proctor_stats: Dict[str, Dict]):
         for proctor in proctors:
-            name = proctor['name']
+            Name = proctor['Name']  # Changed from 'Name' to 'name'
             assigned_time = proctor['assigned_time']
             duration = (datetime.combine(datetime.min, assigned_time['end']) -
                         datetime.combine(datetime.min, assigned_time['start'])).seconds / 3600
-            proctor_stats[name]['hours'] += duration
-
-
-# Additional helper methods could be added as needed
-
-# Example usage in tests:
-def test_optimizer():
-    optimizer = ScheduleOptimizer()
-    test_schedule = {
-        'Monday': [{
-            'lab_time': {
-                'start': datetime.strptime('09:00', '%H:%M').time(),
-                'end': datetime.strptime('12:00', '%H:%M').time()
-            },
-            'proctors': [
-                {
-                    'name': 'John',
-                    'star': True,
-                    'assigned_time': {
-                        'start': datetime.strptime('09:00', '%H:%M').time(),
-                        'end': datetime.strptime('12:00', '%H:%M').time()
-                    }
-                },
-                {
-                    'name': 'Jane',
-                    'star': False,
-                    'assigned_time': {
-                        'start': datetime.strptime('09:00', '%H:%M').time(),
-                        'end': datetime.strptime('12:00', '%H:%M').time()
-                    }
-                }
-            ]
-        }]
-    }
-
-    optimized = optimizer.optimize_schedule(test_schedule)
+            proctor_stats[Name]['hours'] += duration
